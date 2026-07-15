@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rojid Ansari — Android Developer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050a0f;
+      --bg2: #080f17;
+      --card: #0c1620;
+      --card2: #0f1d2b;
+      --border: #1a2d42;
+      --accent: #00d4ff;
+      --accent2: #0099cc;
+      --accent3: #00ff88;
+      --text: #e8f4f8;
+      --muted: #6a8fa8;
+      --muted2: #3d5a6e;
+      --green: #00ff88;
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    /* ============================================
+       SPLASH / INTRO SCREEN
+    ============================================ */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: #07080d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: opacity 0.9s cubic-bezier(.4,0,.2,1), transform 0.9s cubic-bezier(.4,0,.2,1);
+    }
+    #splash.hide {
+      opacity: 0;
+      transform: translateY(-30px);
+      pointer-events: none;
+    }
+
+    /* wave canvas sits behind content */
+    #waveCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+    }
+
+    .splash-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      animation: splashFadeIn 1s 0.4s ease both;
+    }
+    @keyframes splashFadeIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .splash-social {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .splash-social a {
+      width: 36px; height: 36px;
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .splash-social a:hover { border-color: var(--accent); color: var(--accent); }
+
+    .splash-profile-row {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+    .splash-avatar {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.15);
+      object-fit: cover;
+      object-position: top;
+      flex-shrink: 0;
+      background: #1a2030;
+    }
+    .splash-name {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 6vw, 5rem);
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.0;
+      letter-spacing: -0.01em;
+    }
+    .splash-role {
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: rgba(255,255,255,0.45);
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      margin-left: 4px;
+    }
+
+    /* progress bar at bottom */
+    .splash-progress {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #a020f0, #00d4ff, #00ff88);
+      width: 0%;
+      transition: width linear;
+    }
+
+    /* loading dots */
+    .splash-loader {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .splash-loader span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      animation: splashDot 1.4s ease-in-out infinite;
+    }
+    .splash-loader span:nth-child(2) { animation-delay: 0.2s; }
+    .splash-loader span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes splashDot {
+      0%,80%,100% { background: rgba(255,255,255,0.2); transform: scale(1); }
+      40% { background: rgba(160,32,240,0.9); transform: scale(1.4); }
+    }
+
+    /* make body unscrollable while splash is up */
+    body.splash-open { overflow: hidden; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* CUSTOM CURSOR */
+    .cursor {
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+      mix-blend-mode: screen;
+    }
+    .cursor-ring {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: left 0.12s ease, top 0.12s ease, width 0.3s, height 0.3s, border-color 0.3s;
+      opacity: 0.6;
+    }
+    body:hover .cursor { opacity: 1; }
+
+    /* GRID BACKGROUND */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .grid-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,153,204,0.12) 0%, transparent 60%);
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(5,10,15,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+    .nav-logo span { color: var(--text); }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-cta {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 10px 22px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: background 0.2s, color 0.2s;
+    }
+    .nav-cta:hover { background: var(--accent); color: var(--bg); }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: var(--accent); }
+
+    /* THEME TOGGLE */
+    .theme-toggle {
+      width: 44px; height: 24px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s, border-color 0.3s;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+    .theme-toggle .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      transition: transform 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      line-height: 1;
+    }
+    .theme-toggle .toggle-icon-moon,
+    .theme-toggle .toggle-icon-sun { position: absolute; transition: opacity 0.2s; }
+    .theme-toggle .toggle-icon-sun { opacity: 0; }
+    .theme-toggle .toggle-icon-moon { opacity: 1; }
+
+    body.light-mode .theme-toggle .toggle-thumb { transform: translateX(20px); background: #f59e0b; }
+    body.light-mode .theme-toggle .toggle-icon-sun { opacity: 1; }
+    body.light-mode .theme-toggle .toggle-icon-moon { opacity: 0; }
+
+    /* LIGHT MODE VARS */
+    body.light-mode {
+      --bg: #f0f6ff;
+      --bg2: #e4eef9;
+      --card: #ffffff;
+      --card2: #f4f9ff;
+      --border: #c2d8ef;
+      --accent: #0077aa;
+      --accent2: #005f8e;
+      --text: #0d1f2e;
+      --muted: #4a6a82;
+      --muted2: #8aafc9;
+      --green: #00875a;
+    }
+    body.light-mode .grid-bg {
+      background-image:
+        linear-gradient(rgba(0,119,170,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,119,170,0.06) 1px, transparent 1px);
+    }
+    body.light-mode .grid-bg::after {
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,119,170,0.08) 0%, transparent 60%);
+    }
+    body.light-mode nav {
+      background: rgba(240,246,255,0.9);
+    }
+    body.light-mode .t-comment { color: #8aafc9; }
+    body.light-mode .t-str { color: #c07010; }
+
+    /* SECTIONS */
+    section { position: relative; z-index: 1; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 40px;
+      padding: 120px 60px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-orb {
+      position: absolute;
+      width: 700px; height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,255,0.07) 0%, transparent 70%);
+      top: -200px; right: -200px;
+      animation: pulse 8s ease-in-out infinite;
+    }
+    .hero-orb2 {
+      position: absolute;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,255,136,0.05) 0%, transparent 70%);
+      bottom: -100px; left: 100px;
+      animation: pulse 10s ease-in-out infinite reverse;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+    .hero-content { max-width: 580px; flex-shrink: 0; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border: 1px solid rgba(0,212,255,0.3);
+      background: rgba(0,212,255,0.05);
+      margin-bottom: 28px;
+      animation: fadeSlideUp 0.6s ease both;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 4.5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      animation: fadeSlideUp 0.6s 0.15s ease both;
+    }
+    .hero-title .line2 { color: var(--accent); display: block; }
+    .hero-desc {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.75;
+      max-width: 520px;
+      margin-bottom: 40px;
+      animation: fadeSlideUp 0.6s 0.3s ease both;
+    }
+    .hero-desc strong { color: var(--text); font-weight: 500; }
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 48px;
+      animation: fadeSlideUp 0.6s 0.4s ease both;
+    }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      animation: fadeSlideUp 0.6s 0.5s ease both;
+    }
+    .btn-primary {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      background: var(--accent);
+      color: var(--bg);
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,212,255,0.35); }
+    .btn-outline {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 14px 32px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .hero-right {
+      flex-shrink: 0;
+      animation: fadeSlideUp 0.6s 0.6s ease both;
+    }
+    .terminal {
+      width: 340px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      overflow: hidden;
+    }
+    .terminal-bar {
+      background: var(--card2);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .t-dot.red { background: #ff5f57; }
+    .t-dot.yellow { background: #febc2e; }
+    .t-dot.green { background: #28c840; }
+    .terminal-title { color: var(--muted); font-size: 0.7rem; margin-left: auto; }
+    .terminal-body { padding: 20px; line-height: 2; }
+    .t-comment { color: var(--muted2); }
+    .t-key { color: var(--accent); }
+    .t-val { color: var(--green); }
+    .t-str { color: #ffb347; }
+    .t-cursor { display: inline-block; width: 8px; height: 14px; background: var(--accent); vertical-align: middle; animation: blink 1s step-end infinite; }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* SECTIONS COMMON */
+    .section-inner { max-width: 1200px; margin: 0 auto; padding: 100px 60px; }
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-tag::before {
+      content: '';
+      display: block;
+      width: 28px; height: 1px;
+      background: var(--accent);
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 60px;
+    }
+
+    /* SKILLS */
+    .skills-section { background: var(--bg2); }
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .skill-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 28px;
+      transition: border-color 0.3s, transform 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .skill-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+    .skill-card:hover { border-color: var(--accent2); transform: translateY(-4px); }
+    .skill-card:hover::before { transform: scaleX(1); }
+    .skill-icon {
+      width: 44px; height: 44px;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+      font-size: 1.3rem;
+    }
+    .skill-name {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .skill-tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 4px 10px;
+      background: rgba(0,212,255,0.07);
+      border: 1px solid rgba(0,212,255,0.15);
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* ARCHITECTURE EXPANDED CARD */
+    .skill-card--wide {
+      grid-column: span 2;
+    }
+    @media (max-width: 600px) {
+      .skill-card--wide { grid-column: span 1; }
+    }
+    .arch-patterns { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+    .arch-item {
+      background: rgba(0,212,255,0.03);
+      border: 1px solid rgba(0,212,255,0.1);
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .arch-item:hover { border-color: rgba(0,212,255,0.3); }
+    .arch-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .arch-badge {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      background: rgba(0,212,255,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(0,212,255,0.3);
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+    }
+    .arch-badge--orange { background: rgba(255,179,71,0.12); color: #ffb347; border-color: rgba(255,179,71,0.3); }
+    .arch-badge--green { background: rgba(0,255,136,0.1); color: var(--green); border-color: rgba(0,255,136,0.3); }
+    .arch-full { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--text); }
+    .arch-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.6; }
+
+    /* EXPERIENCE */
+    .experience-timeline { position: relative; padding-left: 28px; }
+    .experience-timeline::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+    .exp-item {
+      position: relative;
+      padding: 0 0 60px 40px;
+    }
+    .exp-item::before {
+      content: '';
+      position: absolute;
+      left: -5px; top: 6px;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 16px rgba(0,212,255,0.5);
+    }
+    .exp-period {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .exp-role {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .exp-company { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .exp-points { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .exp-points li {
+      display: flex;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .exp-points li::before {
+      content: '▸';
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* PROJECTS */
+    .projects-section { background: var(--bg2); }
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+    }
+    .project-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+    .project-card:hover { border-color: var(--accent); transform: translateY(-6px); }
+    .project-header {
+      padding: 28px 28px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .project-icon {
+      width: 50px; height: 50px;
+      background: rgba(0,212,255,0.1);
+      border: 1px solid rgba(0,212,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .project-dl {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--green);
+      background: rgba(0,255,136,0.08);
+      border: 1px solid rgba(0,255,136,0.2);
+      padding: 5px 12px;
+      letter-spacing: 0.08em;
+    }
+    .project-body { padding: 20px 28px 28px; flex: 1; display: flex; flex-direction: column; }
+    .project-name {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .project-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      flex: 1;
+    }
+    .project-features { list-style: none; display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+    .project-features li {
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex; gap: 8px;
+    }
+    .project-features li::before { content: '✦'; color: var(--accent); font-size: 0.6rem; margin-top: 2px; }
+    .project-footer {
+      padding: 16px 28px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .project-stack { display: flex; gap: 8px; flex-wrap: wrap; }
+    .p-tag {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      padding: 3px 8px;
+      background: rgba(0,212,255,0.06);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .project-link {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      display: flex; align-items: center; gap: 6px;
+      transition: gap 0.2s;
+      white-space: nowrap;
+    }
+    .project-link:hover { gap: 10px; }
+
+    /* ABOUT */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .about-text p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 18px;
+    }
+    .about-text p strong { color: var(--text); }
+    .about-education {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 28px;
+      margin-top: 28px;
+    }
+    .edu-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+    }
+    .edu-degree {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .edu-school { color: var(--muted); font-size: 0.85rem; margin-bottom: 10px; }
+    .edu-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 4px 12px;
+      background: rgba(0,255,136,0.1);
+      border: 1px solid rgba(0,255,136,0.25);
+      color: var(--green);
+      letter-spacing: 0.08em;
+    }
+    .about-right { display: flex; flex-direction: column; gap: 20px; }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: border-color 0.3s;
+    }
+    .metric-card:hover { border-color: var(--accent); }
+    .metric-icon {
+      width: 50px; height: 50px;
+      background: rgba(0,212,255,0.08);
+      border: 1px solid rgba(0,212,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .metric-num {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .metric-label { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+
+    /* CONTACT */
+    .contact-section { background: var(--bg2); }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .contact-left p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+    .contact-items { display: flex; flex-direction: column; gap: 16px; }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.3s;
+    }
+    .contact-item:hover { border-color: var(--accent); }
+    .contact-item-icon {
+      width: 38px; height: 38px;
+      background: rgba(0,212,255,0.08);
+      border: 1px solid rgba(0,212,255,0.18);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .contact-item-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .contact-item-val { font-size: 0.9rem; color: var(--text); margin-top: 2px; }
+    .contact-form { display: flex; flex-direction: column; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .form-input, .form-textarea {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-textarea { resize: vertical; min-height: 130px; }
+    .form-submit {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 14px;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .form-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,212,255,0.35); }
+
+    /* AI CHATBOT */
+    .ai-section { background: var(--bg); }
+    .ai-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 60px;
+      align-items: start;
+    }
+    .ai-left {}
+    .ai-intro {
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 28px;
+    }
+    .ai-model-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--green);
+      background: rgba(0,255,136,0.07);
+      border: 1px solid rgba(0,255,136,0.2);
+      padding: 7px 14px;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+    .ai-model-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.5s ease-in-out infinite;
+    }
+    .ai-tips { display: flex; flex-direction: column; gap: 10px; margin-top: 28px; }
+    .ai-tip {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .ai-tip:hover { border-color: var(--accent); color: var(--text); }
+    .ai-tip-icon { color: var(--accent); font-size: 0.8rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* CHAT UI */
+    .chat-window {
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+      position: relative;
+      overflow: hidden;
+    }
+    .chat-header {
+      background: var(--card2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-header-left { display: flex; align-items: center; gap: 12px; }
+    .chat-avatar {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .chat-name { font-family: var(--font-display); font-size: 0.9rem; font-weight: 700; }
+    .chat-status { font-family: var(--font-mono); font-size: 0.62rem; color: var(--green); display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+    .chat-status::before { content:''; width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite; }
+    .chat-model-tag { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted2); background: var(--bg); border: 1px solid var(--border); padding: 3px 8px; }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .msg {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+      animation: fadeSlideUp 0.3s ease both;
+    }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 28px; height: 28px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+    }
+    .msg.ai .msg-avatar { background: linear-gradient(135deg, var(--accent), var(--green)); }
+    .msg.user .msg-avatar { background: var(--card2); border: 1px solid var(--border); }
+    .msg-bubble {
+      padding: 10px 14px;
+      font-size: 0.83rem;
+      line-height: 1.65;
+    }
+    .msg.ai .msg-bubble { background: var(--card2); border: 1px solid var(--border); color: var(--text); border-radius: 0 8px 8px 8px; }
+    .msg.user .msg-bubble { background: rgba(0,212,255,0.12); border: 1px solid rgba(0,212,255,0.25); color: var(--text); border-radius: 8px 0 8px 8px; }
+    .typing-indicator { display: flex; gap: 4px; padding: 4px 2px; }
+    .typing-indicator span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: typingBounce 1.2s ease-in-out infinite; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    .chat-input-area {
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: var(--card);
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      outline: none;
+      resize: none;
+      max-height: 100px;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-send {
+      width: 40px; height: 40px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--bg);
+      font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+    .chat-send:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,212,255,0.35); }
+    .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .hidden { display: none !important; }
+    @media (max-width: 900px) {
+      .ai-wrapper { grid-template-columns: 1fr; gap: 32px; }
+      .chat-window { height: 420px; }
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-logo { font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent); }
+    .footer-copy { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted2); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted2);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+
+    /* SCROLL ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent2); }
+
+    /* MOBILE */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      .nav-links, .nav-cta { display: none; }
+      .hamburger { display: flex; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 62px; left: 0; right: 0;
+        background: rgba(5,10,15,0.97);
+        padding: 24px;
+        gap: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+      .hero { padding: 100px 24px 60px; flex-direction: column; justify-content: center; }
+      .hero-right { display: none; }
+      .section-inner { padding: 70px 24px; }
+      .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; padding: 28px 24px; }
+      .projects-grid { grid-template-columns: 1fr; }
+      .hero-stats { gap: 24px; }
+    }
+  </style>
+</head>
+<body class="splash-open">
+
+<!-- ============ SPLASH INTRO SCREEN ============ -->
+<div id="splash">
+  <canvas id="waveCanvas"></canvas>
+
+  <div class="splash-content">
+    <div class="splash-social">
+      <a href="https://www.linkedin.com/in/rojid-ansari/" target="_blank" title="LinkedIn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+      </a>
+      <a href="https://github.com/Rojid968" target="_blank" title="GitHub">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+      </a>
+    </div>
+
+    <div class="splash-profile-row">
+      <img
+        class="splash-avatar"
+        src="assets/profile.jpg"
+        onerror="this.src='assets/profile-placeholder.jpeg'; this.onerror=null;"
+        alt="Rojid Ansari"
+      />
+      <div>
+        <div class="splash-name">Rojid Ansari</div>
+      </div>
+    </div>
+    <div class="splash-role">Mobile Application Developer</div>
+  </div>
+
+  <div class="splash-loader">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="splash-progress" id="splashProgress"></div>
+</div>
+<!-- ============ END SPLASH ============ -->
+<div class="cursor-ring" id="cursor-ring"></div>
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">&lt;<span>Rojid</span> /&gt;</div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#ai">AI Chat</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="mailto:rojidansari922@gmail.com" class="nav-cta">Hire Me</a>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode" onclick="toggleTheme()">
+    <div class="toggle-thumb">
+      <span class="toggle-icon-moon">🌙</span>
+      <span class="toggle-icon-sun">☀️</span>
+    </div>
+  </button>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-orb"></div>
+  <div class="hero-orb2"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Available for Work</div>
+    <h1 class="hero-title">
+      Rojid Ansari
+      <span class="line2">Mobile App Developer</span>
+    </h1>
+    <p class="hero-desc">
+      Building <strong>high-quality, scalable mobile apps</strong> with 4+ years of expertise in Java, Kotlin, and React Native. Deployed across government &amp; enterprise — trusted by lakhs of users.
+    </p>
+    <div class="hero-stats">
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">Years Exp.</div>
+      </div>
+      <div>
+        <div class="stat-num">7L+</div>
+        <div class="stat-label">Downloads</div>
+      </div>
+      <div>
+        <div class="stat-num">6</div>
+        <div class="stat-label">Live Apps</div>
+      </div>
+      <div>
+        <div class="stat-num">5</div>
+        <div class="stat-label">States Served</div>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <a href="#projects" class="btn-primary">View Projects ↓</a>
+      <a href="#contact" class="btn-outline">Get In Touch</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="t-dot red"></div>
+        <div class="t-dot yellow"></div>
+        <div class="t-dot green"></div>
+        <div class="terminal-title">profile.kt</div>
+      </div>
+      <div class="terminal-body">
+        <div><span class="t-comment">// Android Developer</span></div>
+        <div><span class="t-key">val</span> name = <span class="t-str">"Rojid Ansari"</span></div>
+        <div><span class="t-key">val</span> exp = <span class="t-val">5</span> <span class="t-comment">// years</span></div>
+        <div><span class="t-key">val</span> downloads = <span class="t-str">"7L+"</span></div>
+        <div>&nbsp;</div>
+        <div><span class="t-key">val</span> stack = listOf(</div>
+        <div>&nbsp;&nbsp;<span class="t-str">"Kotlin"</span>, <span class="t-str">"Java"</span>,</div>
+        <div>&nbsp;&nbsp;<span class="t-str">"React Native"</span>,</div>
+        <div>&nbsp;&nbsp;<span class="t-str">"Firebase"</span>,</div>
+        <div>&nbsp;&nbsp;<span class="t-str">"MVVM"</span></div>
+        <div>)</div>
+        <div>&nbsp;</div>
+        <div><span class="t-comment">// Currently building...</span></div>
+        <div><span class="t-key">fun</span> <span class="t-val">nextApp()</span> { <span class="t-cursor"></span> }</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section class="skills-section" id="skills">
+  <div class="section-inner">
+    <div class="section-tag reveal">Tech Stack</div>
+    <h2 class="section-title reveal">Skills & Technologies</h2>
+    <div class="skills-grid">
+      <div class="skill-card reveal">
+        <div class="skill-icon">📱</div>
+        <div class="skill-name">Mobile Development</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Kotlin</span>
+          <span class="skill-tag">Java</span>
+          <span class="skill-tag">Android SDK</span>
+          <span class="skill-tag">React Native</span>
+        </div>
+        <div class="skill-tags" style="margin-top:16px;">
+          <span class="skill-tag">Jetpack Components</span>
+          <span class="skill-tag">RESTful APIs</span>
+          <span class="skill-tag">JSON Parsing</span>
+          <span class="skill-tag">Data Binding</span>
+        </div>
+      </div>
+      <div class="skill-card skill-card--wide reveal">
+        <div class="skill-icon">🏗️</div>
+        <div class="skill-name">Architecture Patterns</div>
+        <div class="arch-patterns">
+          <div class="arch-item">
+            <div class="arch-header">
+              <span class="arch-badge">MVVM</span>
+              <span class="arch-full">Model-View-ViewModel</span>
+            </div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-header">
+              <span class="arch-badge arch-badge--orange">MVC</span>
+              <span class="arch-full">Model-View-Controller</span>
+            </div>
+          </div>
+          <div class="arch-item">
+            <div class="arch-header">
+              <span class="arch-badge arch-badge--green">Clean</span>
+              <span class="arch-full">Clean Architecture</span>
+            </div>
+          </div>
+        </div>
+     
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🔥</div>
+        <div class="skill-name">Backend & Services</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Firebase</span>
+          <span class="skill-tag">Google Maps API</span>
+          <span class="skill-tag">Razorpay</span>
+          <span class="skill-tag">Push Notifications</span>
+        </div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">⚙️</div>
+        <div class="skill-name">CI/CD & DevOps</div>
+        <div class="skill-tags">
+          <span class="skill-tag">GitHub Actions</span>
+          <span class="skill-tag">Bitrise</span>
+          <span class="skill-tag">Jenkins</span>
+          <span class="skill-tag">Firebase App Distribution</span>
+          <span class="skill-tag">Play Store</span>
+        </div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🗺️</div>
+        <div class="skill-name">Mapping & Tracking</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Google Maps</span>
+          <span class="skill-tag">Geofencing</span>
+          <span class="skill-tag">Real-time Tracking</span>
+          <span class="skill-tag">GPS</span>
+        </div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🛠️</div>
+        <div class="skill-name">Tools & Workflow</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Android Studio</span>
+          <span class="skill-tag">Git</span>
+          <span class="skill-tag">GitHub</span>
+          <span class="skill-tag">Postman</span>
+        </div>
+      </div>
+      <div class="skill-card reveal">
+        <div class="skill-icon">🧠</div>
+        <div class="skill-name">Other Skills</div>
+        <div class="skill-tags">
+          <span class="skill-tag">Data Structures & Algorithms</span>
+          <span class="skill-tag">Performance Optimisation</span>
+          <span class="skill-tag">Debugging</span>
+          <span class="skill-tag">Code Review</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="section-inner">
+    <div class="section-tag reveal">Work History</div>
+    <h2 class="section-title reveal">Experience</h2>
+    <div class="experience-timeline">
+      <div class="exp-item reveal">
+        <div class="exp-period">07/2021 — Present</div>
+        <div class="exp-role">Android Developer</div>
+        <div class="exp-company">Rosmerta Technologies Ltd — Gurugram, India</div>
+        <ul class="exp-points">
+          <li>Delivered 4 production apps with a combined 7L+ Play Store downloads across government and enterprise clients.</li>
+          <li>Integrated RESTful APIs and third-party services including Google Maps, Razorpay, and Firebase, enhancing app functionality and user engagement.</li>
+          <li>Reduced app load time and improved API response speeds by refactoring code and optimising data synchronisation workflows.</li>
+          <li>Migrated a native Android (Kotlin) application to React Native, improving cross-platform maintainability and reducing future development effort.</li>
+          <li>Implemented Firebase Realtime DB sync, push notifications, and analytics to improve reliability and user interaction.</li>
+          <li>Contributed to CI/CD pipeline setup using GitHub Actions and Bitrise to streamline build, testing, and deployment processes.</li>
+          <li>Managed full Play Store release lifecycle including version management, rollout, and production monitoring.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROJECTS -->
+<section class="projects-section" id="projects">
+  <div class="section-inner">
+    <div class="section-tag reveal">Portfolio</div>
+    <h2 class="section-title reveal">Key Projects</h2>
+    <div class="projects-grid">
+
+      <div class="project-card reveal">
+        <div class="project-header">
+          <div class="project-icon">🛡️</div>
+          <div class="project-dl">50K+ Downloads</div>
+        </div>
+        <div class="project-body">
+          <div class="project-name">AIS140 – Surakshit Safar</div>
+          <p class="project-desc">State-specific vehicle tracking app deployed across Maharashtra, Karnataka, Odisha, Chhattisgarh &amp; Uttarakhand. Built with Google Maps API for real-time tracking and alerts.</p>
+          <ul class="project-features">
+            <li>Migrated native Kotlin app to React Native for cross-platform reach</li>
+            <li>Real-time vehicle tracking with live location and route visualisation</li>
+            <li>Geofencing &amp; Firebase-powered panic &amp; ignition push alerts</li>
+            <li>Optimised API sync for smooth performance across 5 states</li>
+          </ul>
+        </div>
+        <div class="project-footer">
+          <div class="project-stack">
+            <span class="p-tag">React Native</span>
+            <span class="p-tag">Google Maps</span>
+            <span class="p-tag">Firebase</span>
+          </div>
+          <a href="https://play.google.com/store/search?q=ais140-surakshitsafar&c=apps&hl=en_IN" target="_blank" class="project-link">Play Store →</a>
+        </div>
+      </div>
+
+      <div class="project-card reveal">
+        <div class="project-header">
+          <div class="project-icon">🗺️</div>
+          <div class="project-dl">1K+ Downloads</div>
+        </div>
+        <div class="project-body">
+          <div class="project-name">RAL Central Mobile App</div>
+          <p class="project-desc">Centralised VTS platform for state officials, manufacturers, permit holders, and citizens — enabling real-time monitoring, tracking, and bus information on a map.</p>
+          <ul class="project-features">
+            <li>Core Android features in Kotlin for centralised monitoring workflows</li>
+            <li>Razorpay payment gateway for secure device recharge transactions</li>
+            <li>Real-time push notifications and live backend API integration</li>
+          </ul>
+        </div>
+        <div class="project-footer">
+          <div class="project-stack">
+            <span class="p-tag">Kotlin</span>
+            <span class="p-tag">Razorpay</span>
+            <span class="p-tag">Firebase</span>
+          </div>
+          <a href="https://play.google.com/store/search?q=RAL%20central&c=apps&hl=en_IN" target="_blank" class="project-link">Play Store →</a>
+        </div>
+      </div>
+
+      <div class="project-card reveal">
+        <div class="project-header">
+          <div class="project-icon">🚌</div>
+          <div class="project-dl">5L+ Downloads</div>
+        </div>
+        <div class="project-body">
+          <div class="project-name">MSRTC Aapli ST</div>
+          <p class="project-desc">Public transport app for MSRTC passengers providing real-time bus info, GPS-based live location, and nearby stop discovery — serving lakhs of users across Maharashtra.</p>
+          <ul class="project-features">
+            <li>Contributed to Android development in Kotlin for high-traffic service</li>
+            <li>Integrated APIs and improved app responsiveness and stability</li>
+            <li>Debugging, testing, and maintenance for large user base reliability</li>
+          </ul>
+        </div>
+        <div class="project-footer">
+          <div class="project-stack">
+            <span class="p-tag">Kotlin</span>
+            <span class="p-tag">GPS</span>
+            <span class="p-tag">REST APIs</span>
+          </div>
+          <a href="https://play.google.com/store/search?q=msrtc+aapli+st&c=apps&hl=en_IN" target="_blank" class="project-link">Play Store →</a>
+        </div>
+      </div>
+
+      <div class="project-card reveal">
+        <div class="project-header">
+          <div class="project-icon">⛏️</div>
+          <div class="project-dl">1L+ Downloads</div>
+        </div>
+        <div class="project-body">
+          <div class="project-name">OMVTS ORSAC</div>
+          <p class="project-desc">Vehicle tracking application under Odisha Mines and Minerals providing live truck tracking, mineral-load monitoring, and real-time status on the map.</p>
+          <ul class="project-features">
+            <li>Developed Android app in Java for real-time vehicle &amp; load monitoring</li>
+            <li>Optimised real-time data handling and improved application stability</li>
+            <li>Ensured compatibility across multiple device configurations</li>
+          </ul>
+        </div>
+        <div class="project-footer">
+          <div class="project-stack">
+            <span class="p-tag">Java</span>
+            <span class="p-tag">Maps API</span>
+            <span class="p-tag">REST APIs</span>
+          </div>
+          <a href="https://play.google.com/store/search?q=omvts+orsac+app&c=apps&hl=en_IN" target="_blank" class="project-link">Play Store →</a>
+        </div>
+      </div>
+
+      <div class="project-card reveal">
+        <div class="project-header">
+          <div class="project-icon">🚦</div>
+          <div class="project-dl">On Play Store</div>
+        </div>
+        <div class="project-body">
+          <div class="project-name">RAPL AIS 140</div>
+          <p class="project-desc">AIS 140 compliant vehicle tracking and fleet management app enabling real-time GPS tracking, alert management, and government-mandated vehicle monitoring features.</p>
+          <ul class="project-features">
+            <li>AIS 140 certified GPS tracking with real-time location updates</li>
+            <li>Emergency panic alert &amp; ignition status notifications</li>
+            <li>Geofencing with instant boundary breach alerts</li>
+            <li>Fleet management dashboard for operators and officials</li>
+          </ul>
+        </div>
+        <div class="project-footer">
+          <div class="project-stack">
+            <span class="p-tag">Kotlin</span>
+            <span class="p-tag">Google Maps</span>
+            <span class="p-tag">Firebase</span>
+          </div>
+          <a href="https://play.google.com/store/search?q=RAPL%20AIS%20140&c=apps&hl=en_IN" target="_blank" class="project-link">Play Store →</a>
+        </div>
+      </div>
+
+      <div class="project-card reveal">
+        <div class="project-header">
+          <div class="project-icon">🔧</div>
+          <div class="project-dl">On Play Store</div>
+        </div>
+        <div class="project-body">
+          <div class="project-name">ORSAC Device Tech</div>
+          <p class="project-desc">Device technician and field operations app for ORSAC (Odisha Remote Sensing & GIS Centre) enabling on-ground device management, status tracking, and maintenance workflows.</p>
+          <ul class="project-features">
+            <li>Field technician tool for device installation &amp; status tracking</li>
+            <li>Real-time sync with backend for operational status updates</li>
+            <li>Streamlined workflow for device maintenance and reporting</li>
+            <li>Built for robust offline-capable field usage across Odisha</li>
+          </ul>
+        </div>
+        <div class="project-footer">
+          <div class="project-stack">
+            <span class="p-tag">Java</span>
+            <span class="p-tag">REST APIs</span>
+            <span class="p-tag">Firebase</span>
+          </div>
+          <a href="https://play.google.com/store/apps/details?id=com.rtl.orsac_device_tech&hl=en_IN" target="_blank" class="project-link">Play Store →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-inner">
+    <div class="section-tag reveal">Who I Am</div>
+    <h2 class="section-title reveal">About Me</h2>
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <p>I'm <strong>Rojid Ansari</strong>, an Android Developer based in Gurugram with over 5 years of experience building production-grade mobile applications used by government agencies and enterprises across India.</p>
+        <p>My work spans end-to-end mobile development — from <strong>requirement analysis and architecture</strong> through to Play Store deployment and production monitoring. I take full ownership of modules and care deeply about performance, clean code, and user experience.</p>
+        <p>I've built apps that track vehicles across 5 Indian states, serve lakhs of MSRTC commuters, and process real-time mining logistics. Each project has sharpened my instincts for scalable design and reliable delivery.</p>
+        <p>Outside of work, I enjoy keeping up with new Android releases, experimenting with React Native cross-platform patterns, and sharpening my <strong>DSA</strong> skills.</p>
+        <div class="about-education">
+          <div class="edu-label">Education</div>
+          <div class="edu-degree">Master of Computer Applications (MCA)</div>
+          <div class="edu-school">Chandigarh University &nbsp;·&nbsp; 2017 – 2020</div>
+          <span class="edu-badge">🏆 3rd Topper in MCA</span>
+        </div>
+      </div>
+      <div class="about-right reveal">
+        <div class="metric-card">
+          <div class="metric-icon">📦</div>
+          <div>
+            <div class="metric-num">7L+</div>
+            <div class="metric-label">Combined Play Store Downloads</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">🚀</div>
+          <div>
+            <div class="metric-num">6</div>
+            <div class="metric-label">Production Apps Delivered</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">🗺️</div>
+          <div>
+            <div class="metric-num">5</div>
+            <div class="metric-label">Indian States Covered</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">🏅</div>
+          <div>
+            <div class="metric-num">MCA</div>
+            <div class="metric-label">3rd University Topper, Chandigarh University</div>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon">⚡</div>
+          <div>
+            <div class="metric-num">5</div>
+            <div class="metric-label">Years of Mobile Application Development</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="section-inner">
+    <div class="section-tag reveal">Let's Connect</div>
+    <h2 class="section-title reveal">Get In Touch</h2>
+    <div class="contact-grid">
+      <div class="contact-left reveal">
+        <p>I'm open to full-time roles, freelance projects, and interesting collaborations. Whether you're building a new mobile product or need to scale an existing one — let's talk.</p>
+        <div class="contact-items">
+          <a href="mailto:rojidansari922@gmail.com" class="contact-item">
+            <div class="contact-item-icon">✉️</div>
+            <div>
+              <div class="contact-item-label">Email</div>
+              <div class="contact-item-val">rojidansari922@gmail.com</div>
+            </div>
+          </a>
+          <a href="tel:+918092260266" class="contact-item">
+            <div class="contact-item-icon">📞</div>
+            <div>
+              <div class="contact-item-label">Phone</div>
+              <div class="contact-item-val">+91 80922 60266</div>
+            </div>
+          </a>
+          <a href="#" class="contact-item">
+            <div class="contact-item-icon">💼</div>
+            <div>
+              <div class="contact-item-label">LinkedIn</div>
+              <div class="contact-item-val">linkedin.com/in/rojid-ansari</div>
+            </div>
+          </a>
+          <a href="#" class="contact-item">
+            <div class="contact-item-icon">🐙</div>
+            <div>
+              <div class="contact-item-label">GitHub</div>
+              <div class="contact-item-val">github.com/rojid-ansari</div>
+            </div>
+          </a>
+          <div class="contact-item" style="pointer-events:none;">
+            <div class="contact-item-icon">📍</div>
+            <div>
+              <div class="contact-item-label">Location</div>
+              <div class="contact-item-val">Gurugram, Haryana, India</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal">
+        <form class="contact-form" onsubmit="handleSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" class="form-input" placeholder="John Doe" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" placeholder="john@company.com" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <input type="text" class="form-input" placeholder="Project Collaboration" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" placeholder="Tell me about your project..."></textarea>
+          </div>
+          <button type="submit" class="form-submit" id="submitBtn">Send Message →</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI CHATBOT -->
+<section class="ai-section" id="ai">
+  <div class="section-inner">
+    <div class="section-tag reveal">AI Powered</div>
+    <h2 class="section-title reveal">Chat with My AI Assistant</h2>
+    <div class="ai-wrapper">
+
+      <div class="ai-left reveal">
+        <div class="ai-model-badge">Gemini 2.0 Flash · Free API</div>
+        <p class="ai-intro">
+          Ask anything about my work, tech stack, projects, or experience. This assistant is powered by <strong>Google Gemini 2.0 Flash</strong> — a free, fast LLM — and is context-aware about my portfolio.
+        </p>
+        <p class="ai-intro" style="margin-top:-10px;">
+          Built by integrating the <strong>Gemini API</strong> directly into a vanilla HTML/JS page — no backend, no framework. Just a free API key and a fetch call.
+        </p>
+        <p style="font-family:var(--font-mono);font-size:0.68rem;color:var(--muted2);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em;">Try asking:</p>
+        <div class="ai-tips">
+          <div class="ai-tip" onclick="fillPrompt('What tech stack does Rojid use for Android apps?')">
+            <span class="ai-tip-icon">▸</span> What tech stack does Rojid use for Android apps?
+          </div>
+          <div class="ai-tip" onclick="fillPrompt('Tell me about the MSRTC Aapli ST project')">
+            <span class="ai-tip-icon">▸</span> Tell me about the MSRTC Aapli ST project
+          </div>
+          <div class="ai-tip" onclick="fillPrompt('What is MVVM architecture and when does Rojid use it?')">
+            <span class="ai-tip-icon">▸</span> What is MVVM and when does Rojid use it?
+          </div>
+          <div class="ai-tip" onclick="fillPrompt('Is Rojid available for freelance work?')">
+            <span class="ai-tip-icon">▸</span> Is Rojid available for freelance work?
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="chat-window" id="chatWindow">
+          <div class="chat-header">
+            <div class="chat-header-left">
+              <div class="chat-avatar">🤖</div>
+              <div>
+                <div class="chat-name">Rojid's AI Assistant</div>
+                <div class="chat-status">Online · Ready to chat</div>
+              </div>
+            </div>
+            <div class="chat-model-tag" id="modelTag">gemini-2.5-flash</div>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div class="msg ai">
+              <div class="msg-avatar">🤖</div>
+              <div class="msg-bubble">
+                Hi! I'm Rojid's AI assistant. I know all about his work as a Mobile App Developer — his projects, skills, architecture patterns, and experience. What would you like to know?
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about Rojid..." rows="1"
+              onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <button class="chat-send" id="sendBtn" onclick="sendMessage()" title="Send message">➤</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">&lt;ROJID ANSARI /&gt;</div>
+  <div class="footer-copy">© 2025 Rojid Ansari. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="mailto:rojidansari922@gmail.com">Email</a>
+    <a href="https://www.linkedin.com/in/rojid-ansari/">LinkedIn</a>
+    <a href="https://github.com/Rojid968">GitHub</a>
+  </div>
+</footer>
+
+<script>
+  // AI CHATBOT
+  const SYSTEM_CONTEXT = `You are a helpful AI assistant for Rojid Ansari's portfolio website. You answer questions about Rojid professionally and concisely.
+
+Here is everything you know about Rojid:
+- Name: Rojid Ansari
+- Role: Mobile App Developer (Android Developer) with 5 years of experience
+- Location: Gurugram, Haryana, India
+- Email: rojidansari922@gmail.com
+- Phone: +91-8092260266
+- Current Company: Rosmerta Technologies Ltd (since July 2021)
+
+Skills & Tech:
+- Languages: Java, Kotlin, JavaScript
+- Frameworks: Android SDK, React Native, Jetpack Components
+- Architecture: MVVM (Model-View-ViewModel) using data binding and Jetpack; MVC for simpler projects; Clean Architecture for large enterprise apps
+- Backend/Services: Firebase (Realtime DB, Push Notifications, Analytics), Google Maps API, Razorpay payment gateway
+- CI/CD: GitHub Actions, Bitrise, Jenkins, Firebase App Distribution, Google Play Store release management
+- Other: Data Structures & Algorithms, Performance Optimisation, Debugging, Git, GitHub, Android Studio, Postman
+
+Projects:
+1. AIS140 Surakshit Safar (50K+ downloads) - vehicle tracking across 5 states, React Native, Google Maps, Firebase
+2. RAL Central Mobile App (1K+ downloads) - centralised VTS platform, Kotlin, Razorpay, Firebase
+3. MSRTC Aapli ST (5L+ downloads) - public bus tracking for Maharashtra, Kotlin
+4. OMVTS ORSAC (1L+ downloads) - mining truck tracking for Odisha, Java
+5. RAPL AIS 140 - AIS 140 fleet management, Kotlin, Google Maps
+6. ORSAC Device Tech - field technician operations app, Java, Firebase
+
+Education: MCA from Chandigarh University (2017-2020), 3rd Topper
+Achievements: 7L+ combined Play Store downloads, 6 production apps, apps deployed across 5 Indian states
+
+Rojid is available for full-time roles, freelance projects, and collaborations. Keep answers friendly, brief, and professional. If asked something unrelated to Rojid, politely redirect.`;
+
+  const _k = ['AIzaSyCdO72wLsAa3ZESYdeQNcg', 'HcedoIjQgGj8'].join('');
+  let chatHistory = [];
+  let isTyping = false;
+
+  function fillPrompt(text) {
+    const input = document.getElementById('chatInput');
+    input.value = text;
+    autoResize(input);
+    input.focus();
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function addMsg(role, text) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.innerHTML = `<div class="msg-avatar">${role === 'ai' ? '🤖' : '👤'}</div><div class="msg-bubble">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg ai'; div.id = 'typingMsg';
+    div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingMsg');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || isTyping) return;
+
+    input.value = ''; autoResize(input);
+    addMsg('user', text);
+    chatHistory.push({ role: 'user', parts: [{ text }] });
+
+    isTyping = true;
+    document.getElementById('sendBtn').disabled = true;
+    showTyping();
+
+    // Try models in order: 2.5-flash → 2.5-flash-lite → 1.5-flash
+    const MODELS = [
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite-preview-06-17',
+      'gemini-1.5-flash'
+    ];
+
+    const body = {
+      system_instruction: { parts: [{ text: SYSTEM_CONTEXT }] },
+      contents: chatHistory,
+      generationConfig: { maxOutputTokens: 400, temperature: 0.7 }
+    };
+
+    let reply = null;
+    let lastErr = '';
+
+    for (const model of MODELS) {
+      try {
+        document.getElementById('modelTag').textContent = model;
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${_k}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+        );
+        const data = await res.json();
+        if (data.error) {
+          // quota / rate limit — try next model
+          lastErr = data.error.message || 'Unknown error';
+          if (res.status === 429 || res.status === 503) continue;
+          throw new Error(lastErr);
+        }
+        reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply) break; // success
+      } catch (e) {
+        lastErr = e.message;
+        continue;
+      }
+    }
+
+    removeTyping();
+
+    if (reply) {
+      chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+      addMsg('ai', reply);
+    } else {
+      // All models failed — show friendly message
+      addMsg('ai',
+        `⚠️ The AI quota is temporarily exhausted across all free models. This resets at **midnight Pacific Time**.\n\n` +
+        `Meanwhile, feel free to explore my projects below or reach me directly at **rojidansari922@gmail.com** 😊`
+      );
+      document.getElementById('modelTag').textContent = 'quota exceeded';
+    }
+
+    isTyping = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+
+  // ============ SPLASH SCREEN ============
+  (function() {
+    const DURATION = 6500; // ms visible
+    const splash = document.getElementById('splash');
+    const progress = document.getElementById('splashProgress');
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // resize canvas
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // wave animation
+    let t = 0;
+    const LINES = 80;
+    const LINE_GAP = 6;
+
+    function drawWaves() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cx = canvas.width * 0.5;
+      const cy = canvas.height * 0.52;
+
+      for (let i = 0; i < LINES; i++) {
+        const progress_i = i / LINES;
+        // colour gradient: purple → cyan
+        const r = Math.round(160 - progress_i * 130);
+        const g = Math.round(20  + progress_i * 180);
+        const b = Math.round(240 + progress_i * 15);
+        const alpha = 0.55 - Math.abs(progress_i - 0.5) * 0.7;
+        ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+        ctx.lineWidth = 1;
+
+        const yOffset = (i - LINES / 2) * LINE_GAP;
+
+        ctx.beginPath();
+        for (let x = -80; x <= canvas.width + 80; x += 3) {
+          const nx = x / canvas.width;
+          // layered sine waves
+          const wave =
+            Math.sin(nx * Math.PI * 2.5 + t + i * 0.04) * 80 +
+            Math.sin(nx * Math.PI * 1.2 - t * 0.7 + i * 0.02) * 50 +
+            Math.sin(nx * Math.PI * 4   + t * 1.3 + i * 0.06) * 20;
+          const y = cy + yOffset + wave;
+          x === -80 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      t += 0.018;
+    }
+
+    let rafId;
+    function loop() { drawWaves(); rafId = requestAnimationFrame(loop); }
+    loop();
+
+    // progress bar
+    let start = null;
+    function tickProgress(ts) {
+      if (!start) start = ts;
+      const pct = Math.min((ts - start) / DURATION * 100, 100);
+      progress.style.width = pct + '%';
+      if (pct < 100) requestAnimationFrame(tickProgress);
+    }
+    requestAnimationFrame(tickProgress);
+
+    // dismiss after DURATION
+    setTimeout(() => {
+      splash.classList.add('hide');
+      document.body.classList.remove('splash-open');
+      cancelAnimationFrame(rafId);
+      setTimeout(() => { splash.style.display = 'none'; }, 950);
+    }, DURATION);
+
+    // also allow click to skip
+    splash.addEventListener('click', () => {
+      splash.classList.add('hide');
+      document.body.classList.remove('splash-open');
+      cancelAnimationFrame(rafId);
+      setTimeout(() => { splash.style.display = 'none'; }, 950);
+    });
+  })();
+  // ============ END SPLASH ============
+
+  // THEME TOGGLE
+  function toggleTheme() {
+    document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+  }
+  // Restore saved preference
+  if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
+  // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+  function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+  document.querySelectorAll('a, button, .skill-card, .project-card, .metric-card').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width = '18px'; cursor.style.height = '18px';
+      ring.style.width = '52px'; ring.style.height = '52px';
+      ring.style.borderColor = 'var(--green)';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width = '10px'; cursor.style.height = '10px';
+      ring.style.width = '36px'; ring.style.height = '36px';
+      ring.style.borderColor = 'var(--accent)';
+    });
+  });
+
+  // SCROLL REVEAL
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => observer.observe(r));
+
+  // HAMBURGER MENU
+  function toggleMenu() {
+    document.getElementById('navLinks').classList.toggle('open');
+  }
+
+  // ACTIVE NAV LINK
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 120) current = s.id;
+    });
+    navLinks.forEach(l => {
+      l.style.color = l.getAttribute('href') === '#' + current ? 'var(--accent)' : '';
+    });
+  });
+
+  // FORM
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Message Sent ✓';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = 'Send Message →';
+      btn.style.background = 'var(--accent)';
+      e.target.reset();
+    }, 3000);
+  }
+
+  // TYPING EFFECT for hero badge
+  const badge = document.querySelector('.hero-badge');
+  const texts = ['Available for Work', 'Open to Opportunities', 'Android Developer'];
+  let ti = 0;
+  setInterval(() => {
+    ti = (ti + 1) % texts.length;
+    badge.style.opacity = '0';
+    setTimeout(() => {
+      badge.childNodes[badge.childNodes.length - 1].textContent = texts[ti];
+      badge.style.opacity = '1';
+    }, 300);
+  }, 3500);
+  badge.style.transition = 'opacity 0.3s';
+</script>
+</body>
+</html>
